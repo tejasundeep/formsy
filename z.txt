@@ -1,0 +1,14 @@
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_info JSON
+);
+
+
+INSERT INTO users (user_info)
+VALUES ('{
+    "first_name": "Teja",
+    "last_name": "Sundeep",
+    "email": "tsreddykarri@gmail.com",
+    "password": "$2b$10$VtMohL7EJW0NgXio86neE.otkKcSNTtKiV31dUHi1Ykyv6NUKp/Wq",
+    "role": "sadmin",
+}');
