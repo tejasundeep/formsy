@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Table, Container, Row, Col, Button, Modal, Form, Spinner } from 'react-bootstrap';
 
@@ -5,29 +6,17 @@ export default function Home() {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
-    const [formData, setFormData] = useState({});
+    const [formData, setFormData] = useState({ first_name: '', last_name: '', username: '', email: '', role: 'user', password: '' });
     const [selectedUser, setSelectedUser] = useState(null);
-    const [isEditing, setIsEditing] = useState(false); // Flag to determine if editing or adding
-    const [headers, setHeaders] = useState([]);
-    const [extraFields, setExtraFields] = useState([]); // Store additional dynamic fields
+    const [extraFields, setExtraFields] = useState([]);
 
-    useEffect(() => {
-        fetchUsers();
-    }, []);
+    useEffect(() => { fetchUsers(); }, []);
 
     const fetchUsers = async () => {
         setLoading(true);
         try {
             const response = await fetch('/api/users');
             const data = await response.json();
-
-            // Collect all unique keys from all users
-            const allKeys = new Set();
-            data.forEach(user => {
-                Object.keys(user).forEach(key => allKeys.add(key));
-            });
-
-            setHeaders([...allKeys]); // Convert the Set back to an array
             setUsers(data);
         } catch (error) {
             console.error('Error fetching users:', error);
@@ -36,10 +25,16 @@ export default function Home() {
         }
     };
 
-    const handleEdit = (user) => {
-        setIsEditing(true);
+    const handleAddOrEditUser = (user = null) => {
         setSelectedUser(user);
-        setFormData(user);
+        if (user) {
+            setFormData({ first_name: user.first_name, last_name: user.last_name, username: user.username, email: user.email, role: user.role, password: '' });
+            setExtraFields(Object.keys(user).filter(key => !['first_name', 'last_name', 'username', 'email', 'role', 'password', 'id', 'created_at'].includes(key))
+                .map(key => ({ label: key, value: user[key] })));
+        } else {
+            setFormData({ first_name: '', last_name: '', username: '', email: '', role: 'user', password: '' });
+            setExtraFields([]);
+        }
         setShowModal(true);
     };
 
@@ -53,28 +48,18 @@ export default function Home() {
     };
 
     const handleSubmit = async () => {
-        // Create a copy of formData
         let finalData = { ...formData };
-
-        // Map extra fields into the formData object directly
-        extraFields.forEach(field => {
-            finalData[field.label.toLowerCase()] = field.value;
-        });
-
+        extraFields.forEach(field => { finalData[field.label.toLowerCase()] = field.value; });
+        if (!finalData.password) delete finalData.password;
+        
         try {
-            if (isEditing && selectedUser) {
-                await fetch(`/api/users/${selectedUser.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(finalData),
-                });
-            } else {
-                await fetch('/api/users', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(finalData),
-                });
-            }
+            const method = selectedUser ? 'PUT' : 'POST';
+            const url = selectedUser ? `/api/users/${selectedUser.id}` : '/api/users';
+            await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(finalData),
+            });
             setShowModal(false);
             fetchUsers();
         } catch (error) {
@@ -82,29 +67,9 @@ export default function Home() {
         }
     };
 
-    const handleAddUser = () => {
-        setIsEditing(false);
-        setFormData({ first_name: '', last_name: '', email: '', role: 'user' });
-        setSelectedUser(null);
-        setExtraFields([]); // Reset dynamic fields on adding new user
-        setShowModal(true);
-    };
-
-    const handleAddField = () => {
-        setExtraFields([...extraFields, { label: '', value: '' }]);
-    };
-
-    const handleRemoveField = (index) => {
-        const updatedFields = [...extraFields];
-        updatedFields.splice(index, 1);
-        setExtraFields(updatedFields);
-    };
-
-    const handleFieldChange = (index, key, value) => {
-        const updatedFields = [...extraFields];
-        updatedFields[index][key] = value;
-        setExtraFields(updatedFields);
-    };
+    const handleAddField = () => setExtraFields([...extraFields, { label: '', value: '' }]);
+    const handleRemoveField = (index) => setExtraFields(extraFields.filter((_, i) => i !== index));
+    const handleFieldChange = (index, key, value) => setExtraFields(extraFields.map((field, i) => i === index ? { ...field, [key]: value } : field));
 
     const roles = [
         { label: 'User', value: 'user' },
@@ -112,158 +77,73 @@ export default function Home() {
         { label: 'Super Admin', value: 'super-admin' },
     ];
 
-    const getRoleLabel = (roleValue) => {
-        const role = roles.find(r => r.value === roleValue);
-        return role ? role.label : roleValue;
-    };
+    function capitalizeText(name) {
+        return name.replace('_', ' ').replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    }
 
-    const renderEditFormFields = () => {
-        return headers.map((header, index) => {
-            if (header === 'id' || header === 'created_at') {
-                return null; // Skip read-only fields like 'id' and 'created_at'
-            }
-            if (header === 'role') {
-                return (
-                    <Form.Group className="mb-3" key={index}>
-                        <Form.Label>{header.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</Form.Label>
-                        <Form.Control
-                            as="select"
-                            value={formData[header] || ''}
-                            onChange={(e) => setFormData({ ...formData, [header]: e.target.value })}
-                        >
-                            {roles.map((role, index) => (
-                                <option key={index} value={role.value}>
-                                    {role.label}
-                                </option>
-                            ))}
-                        </Form.Control>
-                    </Form.Group>
-                );
-            }
-            return (
-                <Form.Group className="mb-3" key={index}>
-                    <Form.Label>{header.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</Form.Label>
-                    <Form.Control
-                        type={header === 'email' ? 'email' : 'text'}
-                        value={formData[header] || ''}
-                        onChange={(e) => setFormData({ ...formData, [header]: e.target.value })}
-                    />
-                </Form.Group>
-            );
-        });
-    };
-
-    const renderAddFormFields = () => (
+    const renderFormFields = () => (
         <>
-            <Form.Group className="mb-3">
-                <Form.Label>First Name</Form.Label>
-                <Form.Control
-                    type="text"
-                    value={formData.first_name}
-                    onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                />
-            </Form.Group>
-            <Form.Group className="mb-3">
-                <Form.Label>Last Name</Form.Label>
-                <Form.Control
-                    type="text"
-                    value={formData.last_name}
-                    onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                />
-            </Form.Group>
-            <Form.Group className="mb-3">
-                <Form.Label>Email</Form.Label>
-                <Form.Control
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                />
-            </Form.Group>
+            {['first_name', 'last_name', 'username', 'email'].map((field, index) => (
+                <Form.Group className="mb-3" key={index}>
+                    <Form.Label>{capitalizeText(field)}</Form.Label>
+                    <Form.Control type={field === 'email' ? 'email' : 'text'} value={formData[field] || ''} placeholder={`Enter ${capitalizeText(field)}`} onChange={(e) => setFormData({ ...formData, [field]: e.target.value })} />
+                </Form.Group>
+            ))}
             <Form.Group className="mb-3">
                 <Form.Label>Role</Form.Label>
-                <Form.Control
-                    as="select"
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                >
-                    {roles.map((role, index) => (
-                        <option key={index} value={role.value}>
-                            {role.label}
-                        </option>
-                    ))}
+                <Form.Control as="select" value={formData.role || ''} onChange={(e) => setFormData({ ...formData, role: e.target.value })}>
+                    {roles.map((role, index) => <option key={index} value={role.value}>{role.label}</option>)}
                 </Form.Control>
             </Form.Group>
+            <Form.Group className="mb-3">
+                <Form.Label>Password {selectedUser && "(leave blank to keep existing)"}</Form.Label>
+                <Form.Control type="password" placeholder={selectedUser ? "Enter new password if changing" : "Enter password"} value={formData.password || ''} onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
+            </Form.Group>
 
-            {/* Dynamic Extra Fields */}
+            {/* Dynamic Fields */}
             {extraFields.map((field, index) => (
                 <div key={index} className="d-flex mb-3">
-                    <Form.Control
-                        type="text"
-                        placeholder="Label"
-                        className="me-2"
-                        value={field.label}
-                        onChange={(e) => handleFieldChange(index, 'label', e.target.value)}
-                    />
-                    <Form.Control
-                        type="text"
-                        placeholder="Value"
-                        className="me-2"
-                        value={field.value}
-                        onChange={(e) => handleFieldChange(index, 'value', e.target.value)}
-                    />
+                    <Form.Control type="text" placeholder="Label" className="me-2" value={field.label} onChange={(e) => handleFieldChange(index, 'label', e.target.value)} />
+                    <Form.Control type="text" placeholder="Value" className="me-2" value={field.value} onChange={(e) => handleFieldChange(index, 'value', e.target.value)} />
                     <Button variant="danger" onClick={() => handleRemoveField(index)}>-</Button>
                 </div>
             ))}
-
             <Button variant="success" onClick={handleAddField}>+ Add Field</Button>
         </>
     );
 
-    if (loading) {
-        return (
-            <Container className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
-                <Spinner animation="border" role="status">
-                    <span className="visually-hidden">Loading...</span>
-                </Spinner>
-            </Container>
-        );
-    }
+    if (loading) return <Container className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}><Spinner animation="border" role="status"><span className="visually-hidden">Loading...</span></Spinner></Container>;
 
     return (
         <Container>
             <Row className="my-4">
-                <Col>
-                    <h1 className="text-center">Users List</h1>
-                </Col>
+                <Col><h1 className="text-center">Users List</h1></Col>
             </Row>
             <Row>
                 <Col>
-                    <Button className="mb-3" onClick={handleAddUser}>Add User</Button>
+                    <Button className="mb-3" onClick={() => handleAddOrEditUser()}>Add User</Button>
                     <Table striped bordered hover responsive>
                         <thead className="table-dark">
                             <tr>
-                                {headers.map((header, index) => (
-                                    <th key={index} className="align-middle">
-                                        {header.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')}
-                                    </th>
-                                ))}
-                                <th className="align-middle">Actions</th>
+                                <th>First Name</th>
+                                <th>Last Name</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {users.map((user) => (
+                            {users.map(user => (
                                 <tr key={user.id}>
-                                    {headers.map((header, index) => (
-                                        <td key={index} className="align-middle">
-                                            {header === 'role'
-                                                ? getRoleLabel(user[header])
-                                                : header === 'created_at'
-                                                    ? new Date(user[header]).toLocaleDateString()
-                                                    : user[header]}
-                                        </td>
-                                    ))}
-                                    <td className="align-middle">
-                                        <Button variant="primary" onClick={() => handleEdit(user)}>Edit</Button>{' '}
+                                    <td>{user.first_name}</td>
+                                    <td>{user.last_name}</td>
+                                    <td>{user.username}</td>
+                                    <td>{user.email}</td>
+                                    <td>{roles.find(r => r.value === user.role)?.label || user.role}</td>
+                                    <td>
+                                        <Link href={`/profile/${user.username}`} className='btn btn-secondary mx-1'>View</Link>
+                                        <Button variant="primary" onClick={() => handleAddOrEditUser(user)}>Edit</Button>{' '}
                                         <Button variant="danger" onClick={() => handleDelete(user.id)}>Delete</Button>
                                     </td>
                                 </tr>
@@ -273,16 +153,9 @@ export default function Home() {
                 </Col>
             </Row>
 
-            {/* Modal for Add/Edit User */}
             <Modal show={showModal} onHide={() => setShowModal(false)}>
-                <Modal.Header closeButton>
-                    <Modal.Title>{isEditing ? 'Edit User' : 'Add User'}</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <Form>
-                        {isEditing ? renderEditFormFields() : renderAddFormFields()}
-                    </Form>
-                </Modal.Body>
+                <Modal.Header closeButton><Modal.Title>{selectedUser ? 'Edit User' : 'Add User'}</Modal.Title></Modal.Header>
+                <Modal.Body><Form>{renderFormFields()}</Form></Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" onClick={() => setShowModal(false)}>Close</Button>
                     <Button variant="primary" onClick={handleSubmit}>Save Changes</Button>

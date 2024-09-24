@@ -5,13 +5,15 @@ export default async function handler(req, res) {
 
     if (req.method === 'GET') {
         try {
-            const [rows] = await dbConnect.query('SELECT * FROM users WHERE id = ?', [id]);
+            const [rows] = await dbConnect.query(`SELECT * FROM users WHERE id = ? OR JSON_UNQUOTE(JSON_EXTRACT(user_info, '$.username')) = ?`, [id, id]);
             if (rows.length === 0) return res.status(404).json({ message: 'User not found' });
+
             const user = {
                 id: rows[0].id,
                 ...JSON.parse(rows[0].user_info),
                 created_at: rows[0].created_at,
             };
+
             res.status(200).json(user);
         } catch (error) {
             res.status(500).json({ message: 'Database error', error: error.message });
@@ -24,6 +26,12 @@ export default async function handler(req, res) {
             if (existingUser.length === 0) return res.status(404).json({ message: 'User not found' });
 
             const currentUserInfo = JSON.parse(existingUser[0].user_info);
+
+            for (const key in currentUserInfo) {
+                if (!(key in updatedInfo)) {
+                    delete currentUserInfo[key];
+                }
+            }
 
             const updatedUserInfo = {
                 ...currentUserInfo,
