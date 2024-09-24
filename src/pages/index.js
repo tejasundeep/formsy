@@ -9,6 +9,7 @@ export default function Home() {
     const [selectedUser, setSelectedUser] = useState(null);
     const [isEditing, setIsEditing] = useState(false); // Flag to determine if editing or adding
     const [headers, setHeaders] = useState([]);
+    const [extraFields, setExtraFields] = useState([]); // Store additional dynamic fields
 
     useEffect(() => {
         fetchUsers();
@@ -20,9 +21,13 @@ export default function Home() {
             const response = await fetch('/api/users');
             const data = await response.json();
 
-            if (data.length > 0) {
-                setHeaders(Object.keys(data[0]));
-            }
+            // Collect all unique keys from all users
+            const allKeys = new Set();
+            data.forEach(user => {
+                Object.keys(user).forEach(key => allKeys.add(key));
+            });
+
+            setHeaders([...allKeys]); // Convert the Set back to an array
             setUsers(data);
         } catch (error) {
             console.error('Error fetching users:', error);
@@ -48,18 +53,26 @@ export default function Home() {
     };
 
     const handleSubmit = async () => {
+        // Create a copy of formData
+        let finalData = { ...formData };
+
+        // Map extra fields into the formData object directly
+        extraFields.forEach(field => {
+            finalData[field.label.toLowerCase()] = field.value;
+        });
+
         try {
             if (isEditing && selectedUser) {
                 await fetch(`/api/users/${selectedUser.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData),
+                    body: JSON.stringify(finalData),
                 });
             } else {
                 await fetch('/api/users', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData),
+                    body: JSON.stringify(finalData),
                 });
             }
             setShowModal(false);
@@ -73,7 +86,24 @@ export default function Home() {
         setIsEditing(false);
         setFormData({ first_name: '', last_name: '', email: '', role: 'user' });
         setSelectedUser(null);
+        setExtraFields([]); // Reset dynamic fields on adding new user
         setShowModal(true);
+    };
+
+    const handleAddField = () => {
+        setExtraFields([...extraFields, { label: '', value: '' }]);
+    };
+
+    const handleRemoveField = (index) => {
+        const updatedFields = [...extraFields];
+        updatedFields.splice(index, 1);
+        setExtraFields(updatedFields);
+    };
+
+    const handleFieldChange = (index, key, value) => {
+        const updatedFields = [...extraFields];
+        updatedFields[index][key] = value;
+        setExtraFields(updatedFields);
     };
 
     const roles = [
@@ -87,7 +117,6 @@ export default function Home() {
         return role ? role.label : roleValue;
     };
 
-    // Dynamically render form fields based on headers when editing
     const renderEditFormFields = () => {
         return headers.map((header, index) => {
             if (header === 'id' || header === 'created_at') {
@@ -124,7 +153,6 @@ export default function Home() {
         });
     };
 
-    // Custom fields for adding a new user
     const renderAddFormFields = () => (
         <>
             <Form.Group className="mb-3">
@@ -165,6 +193,29 @@ export default function Home() {
                     ))}
                 </Form.Control>
             </Form.Group>
+
+            {/* Dynamic Extra Fields */}
+            {extraFields.map((field, index) => (
+                <div key={index} className="d-flex mb-3">
+                    <Form.Control
+                        type="text"
+                        placeholder="Label"
+                        className="me-2"
+                        value={field.label}
+                        onChange={(e) => handleFieldChange(index, 'label', e.target.value)}
+                    />
+                    <Form.Control
+                        type="text"
+                        placeholder="Value"
+                        className="me-2"
+                        value={field.value}
+                        onChange={(e) => handleFieldChange(index, 'value', e.target.value)}
+                    />
+                    <Button variant="danger" onClick={() => handleRemoveField(index)}>-</Button>
+                </div>
+            ))}
+
+            <Button variant="success" onClick={handleAddField}>+ Add Field</Button>
         </>
     );
 
