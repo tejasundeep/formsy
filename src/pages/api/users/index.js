@@ -1,9 +1,12 @@
-import dbConnect from "@/utils/db";
+import { getConnection } from "@/utils/db";
 
 export default async function handler(req, res) {
+    // First, establish a connection with the database
+    const connection = await getConnection();
+
     if (req.method === 'GET') {
         try {
-            const [rows] = await dbConnect.query('SELECT * FROM users');
+            const [rows] = await connection.query('SELECT * FROM users');
             const users = rows.map((row) => ({
                 id: row.id,
                 ...JSON.parse(row.user_info),
@@ -21,7 +24,7 @@ export default async function handler(req, res) {
         }
 
         try {
-            await dbConnect.query(
+            await connection.query(
                 'INSERT INTO users (user_info) VALUES (?)',
                 [JSON.stringify(userInfo)]
             );

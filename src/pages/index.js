@@ -1,3 +1,4 @@
+import Logout from '@/components/logout';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Table, Container, Row, Col, Button, Modal, Form, Spinner } from 'react-bootstrap';
@@ -118,6 +119,7 @@ export default function Home() {
         <Container>
             <Row className="my-4">
                 <Col><h1 className="text-center">Users List</h1></Col>
+                <Col><Logout /></Col>
             </Row>
             <Row>
                 <Col>

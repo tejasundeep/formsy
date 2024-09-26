@@ -1,11 +1,17 @@
-import dbConnect from "@/utils/db";
+import { getConnection } from "@/utils/db";
 
 export default async function handler(req, res) {
     const { id } = req.query;
 
+    // First, establish a connection with the database
+    const connection = await getConnection();
+
     if (req.method === 'GET') {
         try {
-            const [rows] = await dbConnect.query(`SELECT * FROM users WHERE id = ? OR JSON_UNQUOTE(JSON_EXTRACT(user_info, '$.username')) = ?`, [id, id]);
+            const [rows] = await connection.query(
+                `SELECT * FROM users WHERE id = ? OR JSON_UNQUOTE(JSON_EXTRACT(user_info, '$.username')) = ?`, 
+                [id, id]
+            );
             if (rows.length === 0) return res.status(404).json({ message: 'User not found' });
 
             const user = {
@@ -22,7 +28,10 @@ export default async function handler(req, res) {
         const updatedInfo = req.body;
 
         try {
-            const [existingUser] = await dbConnect.query('SELECT user_info FROM users WHERE id = ?', [id]);
+            const [existingUser] = await connection.query(
+                'SELECT user_info FROM users WHERE id = ?', 
+                [id]
+            );
             if (existingUser.length === 0) return res.status(404).json({ message: 'User not found' });
 
             const currentUserInfo = JSON.parse(existingUser[0].user_info);
@@ -38,14 +47,20 @@ export default async function handler(req, res) {
                 ...updatedInfo
             };
 
-            await dbConnect.query('UPDATE users SET user_info = ? WHERE id = ?', [JSON.stringify(updatedUserInfo), id]);
+            await connection.query(
+                'UPDATE users SET user_info = ? WHERE id = ?', 
+                [JSON.stringify(updatedUserInfo), id]
+            );
             res.status(200).json({ message: 'User updated successfully' });
         } catch (error) {
             res.status(500).json({ message: 'Database error', error: error.message });
         }
     } else if (req.method === 'DELETE') {
         try {
-            const [result] = await dbConnect.query('DELETE FROM users WHERE id = ?', [id]);
+            const [result] = await connection.query(
+                'DELETE FROM users WHERE id = ?', 
+                [id]
+            );
             if (result.affectedRows === 0) return res.status(404).json({ message: 'User not found' });
             res.status(200).json({ message: 'User deleted successfully' });
         } catch (error) {
