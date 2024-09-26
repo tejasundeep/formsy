@@ -29,34 +29,52 @@ export default function Home() {
 
     const roles = [
         { label: 'User', value: 'user' },
+        { label: 'Moderator', value: 'moderator' },
         { label: 'Administrator', value: 'admin' },
         { label: 'Super Admin', value: 'super-admin' },
     ];
 
-    // Filter users based on role
-    const filterUsersByRole = useCallback((data) => {
+    // Filter users based on role and matching cast and religion from the admin data
+    const filterUsersByRole = useCallback((data, admin) => {
         if (sessionUser?.role === 'super-admin') {
+            // Super Admin can view Admins and Moderators
             setUsers(data.filter(user => user.role === 'admin'));
         } else if (sessionUser?.role === 'admin') {
-            setUsers(data.filter(user => user.role === 'user' || user.role === 'admin'));
+            // Admin can view Moderators with the same cast and religion
+            setUsers(data.filter(user => 
+                user.role === 'moderator' && user.religion === admin.religion && user.cast === admin.cast
+            ));
+        } else if (sessionUser?.role === 'moderator') {
+            // Moderator can only see users
+            setUsers(data.filter(user => user.role === 'user'));
         } else {
-            setUsers([]);
+            setUsers([]); // Other roles or no access
         }
     }, [sessionUser?.role]);
 
-    // Fetch users based on the logged-in user's role
+    // Fetch users and filter by admin's religion and cast
     const fetchUsers = useCallback(async () => {
         setLoading(true);
         try {
+            // Fetch all users
             const response = await fetch('/api/users');
             const data = await response.json();
-            filterUsersByRole(data);
+
+            // Find the admin details from the data
+            const admin = data.find(user => user.role === 'admin' && user.id === sessionUser?.id);
+
+            if (admin) {
+                // Filter users based on role and admin's cast and religion
+                filterUsersByRole(data, admin);
+            } else {
+                console.error('Admin details not found');
+            }
         } catch (error) {
             console.error('Error fetching users:', error);
         } finally {
             setLoading(false);
         }
-    }, [filterUsersByRole]);
+    }, [sessionUser?.id, filterUsersByRole]);
 
     useEffect(() => {
         fetchUsers();
@@ -127,8 +145,15 @@ export default function Home() {
     };
 
     const getAvailableRoles = () => {
-        if (sessionUser?.role === 'super-admin') return roles.filter(role => role.value === 'admin');
-        if (sessionUser?.role === 'admin') return roles.filter(role => role.value === 'user');
+        if (sessionUser?.role === 'super-admin') {
+            return roles.filter(role => role.value === 'admin' || role.value === 'moderator');
+        }
+        if (sessionUser?.role === 'admin') {
+            return roles.filter(role => role.value === 'user' || role.value === 'moderator');
+        }
+        if (sessionUser?.role === 'moderator') {
+            return roles.filter(role => role.value === 'user');
+        }
         return [];
     };
 
