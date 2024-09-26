@@ -1,4 +1,5 @@
 import { getConnection } from "@/utils/db";
+import bcrypt from 'bcryptjs'; // Import bcryptjs
 
 export default async function handler(req, res) {
     const { id } = req.query;
@@ -36,6 +37,13 @@ export default async function handler(req, res) {
 
             const currentUserInfo = JSON.parse(existingUser[0].user_info);
 
+            // Check if password needs to be hashed
+            if (updatedInfo.password) {
+                const salt = await bcrypt.genSalt(10); // Generate a salt
+                updatedInfo.password = await bcrypt.hash(updatedInfo.password, salt); // Hash the password
+            }
+
+            // Remove keys from the current info that are not in the updated info
             for (const key in currentUserInfo) {
                 if (!(key in updatedInfo)) {
                     delete currentUserInfo[key];
