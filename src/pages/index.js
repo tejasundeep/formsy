@@ -14,7 +14,9 @@ export default function Home() {
         username: '',
         email: '',
         role: sessionUser?.role === 'super-admin' ? 'admin' : 'user',
-        password: ''
+        password: '',
+        religion: '',
+        cast: ''
     };
 
     // State variables
@@ -36,7 +38,7 @@ export default function Home() {
         if (sessionUser?.role === 'super-admin') {
             setUsers(data.filter(user => user.role === 'admin'));
         } else if (sessionUser?.role === 'admin') {
-            setUsers(data.filter(user => user.role === 'user'));
+            setUsers(data.filter(user => user.role === 'user' || user.role === 'admin'));
         } else {
             setUsers([]);
         }
@@ -70,7 +72,9 @@ export default function Home() {
                 username: user.username,
                 email: user.email,
                 role: user.role,
-                password: ''
+                password: '',
+                religion: user.religion || '',
+                cast: user.cast || ''
             });
             setExtraFields(extractExtraFields(user));
         } else {
@@ -82,7 +86,7 @@ export default function Home() {
 
     const extractExtraFields = (user) => (
         Object.keys(user)
-            .filter(key => !['first_name', 'last_name', 'username', 'email', 'role', 'password', 'id', 'created_at'].includes(key))
+            .filter(key => !['first_name', 'last_name', 'username', 'email', 'role', 'password', 'id', 'religion', 'cast', 'created_at'].includes(key))
             .map(key => ({ label: key, value: user[key] }))
     );
 
@@ -148,6 +152,26 @@ export default function Home() {
                     />
                 </Form.Group>
             ))}
+            <Form.Group className="mb-3">
+                <Form.Label>Religion</Form.Label>
+                <Form.Control
+                    type="text"
+                    value={formData.religion}
+                    placeholder="Enter religion"
+                    onChange={(e) => setFormData({ ...formData, religion: e.target.value })}
+                    required
+                />
+            </Form.Group>
+            <Form.Group className="mb-3">
+                <Form.Label>Cast</Form.Label>
+                <Form.Control
+                    type="text"
+                    value={formData.cast}
+                    placeholder="Enter cast"
+                    onChange={(e) => setFormData({ ...formData, cast: e.target.value })}
+                    required
+                />
+            </Form.Group>
             <Form.Group className="mb-3">
                 <Form.Label>Role</Form.Label>
                 <Form.Control
@@ -227,8 +251,8 @@ const LoadingScreen = () => (
 // Header component with the title and logout button
 const Header = () => (
     <Row className="my-4">
-        <Col><h1 className="text-center">Users List</h1></Col>
-        <Col><Logout /></Col>
+        <Col><h1>Users List</h1></Col>
+        <Col className="text-end"><Logout /></Col>
     </Row>
 );
 
@@ -255,8 +279,8 @@ const UsersTable = ({ users, roles, onEdit, onDelete }) => (
                     <td>{roles.find(r => r.value === user.role)?.label || user.role}</td>
                     <td>
                         <Link href={`/profile/${user.username}`} className='btn btn-secondary mx-1'>View</Link>
-                        <Button variant="primary" onClick={() => onEdit(user)}>Edit</Button>{' '}
-                        <Button variant="danger" onClick={() => onDelete(user.id)}>Delete</Button>
+                        <Button variant="primary" className='mx-1' onClick={() => onEdit(user)}>Edit</Button>
+                        <Button variant="danger" className='mx-1' onClick={() => onDelete(user.id)}>Delete</Button>
                     </td>
                 </tr>
             ))}
