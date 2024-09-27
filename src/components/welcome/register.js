@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Container, Row, Col, Form, Button, Spinner, Alert } from 'react-bootstrap';
 import { useRouter } from 'next/router';
 import { religionOptions, religionToCastMap } from '@/components/groups';
+import Script from 'next/script'; // Import Razorpay script
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -19,30 +20,46 @@ export default function RegisterPage() {
     const [formData, setFormData] = useState(initialFormState);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [success, setSuccess] = useState(''); // State for success message
+    const [success, setSuccess] = useState('');
     const [castOptions, setCastOptions] = useState([]);
 
-    // Handle form submission
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setError('');
-        setSuccess('');
+    // Create Razorpay payment order on the server
+    const createOrder = async () => {
+        const response = await fetch('/api/payment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                amount: 500, // The amount is set to 500 INR
+                currency: 'INR',
+                receipt: `receipt_${formData.username}`,
+            }),
+        });
 
+        if (!response.ok) throw new Error('Failed to create payment order');
+        return response.json();
+    };
+
+    // Handle payment success and complete user registration
+    const handlePaymentSuccess = async (paymentResponse) => {
         try {
             const response = await fetch('/api/users', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({
+                    ...formData,
+                    payment_id: paymentResponse.razorpay_payment_id,
+                }),
             });
 
             if (response.ok) {
                 setSuccess('Registration successful! Please log in.');
                 setTimeout(() => {
                     router.push('/login');
-                }, 2000); // Redirect after 2 seconds
+                }, 2000);
             } else {
                 const result = await response.json();
                 setError(result.message || 'Registration failed');
@@ -54,19 +71,67 @@ export default function RegisterPage() {
         }
     };
 
-    // Handle input changes and update cast options when religion is selected
+    // Handle Razorpay payment window
+    const handlePayment = async (order) => {
+        const options = {
+            key: process.env.RAZORPAY_KEY_ID, // Razorpay key ID from environment
+            amount: order.amount,
+            currency: order.currency,
+            name: 'My Website',
+            description: 'Registration Fee',
+            order_id: order.id,
+            handler: handlePaymentSuccess,
+            prefill: {
+                name: `${formData.first_name} ${formData.last_name}`,
+                email: formData.email,
+            },
+            theme: {
+                color: '#3399cc',
+            },
+            modal: {
+                ondismiss: () => {
+                    setError('Payment cancelled. Please try again.');
+                    setLoading(false);
+                },
+            },
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+    };
+
+    // Handle form submission
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
+        setSuccess('');
+
+        try {
+            const order = await createOrder();
+            await handlePayment(order);
+        } catch (error) {
+            setError('Payment failed. Please try again.');
+            setLoading(false);
+        }
+    };
+
+    // Handle input change and update cast options when religion is selected
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
-
         if (name === 'religion') {
             setCastOptions(religionToCastMap[value] || []);
-            setFormData({ ...formData, cast: '' });
+            setFormData({ ...formData, [name]: value, cast: '' }); // Reset cast when religion changes
+        } else {
+            setFormData({ ...formData, [name]: value });
         }
     };
 
     return (
         <Container>
+            {/* Razorpay Script */}
+            <Script src="https://checkout.razorpay.com/v1/checkout.js" />
+
             <Row>
                 <Col>
                     <h2 className="my-4">Register</h2>
