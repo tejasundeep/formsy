@@ -195,52 +195,95 @@ export default function AdminCP({ sessionUser }) {
 
     const renderFormFields = () => (
         <>
-            {['first_name', 'last_name', 'username', 'email'].map((field, index) => (
-                <Form.Group className="mb-3" key={index}>
-                    <Form.Label>{capitalizeText(field)}</Form.Label>
-                    <Form.Control
-                        type={field === 'email' ? 'email' : 'text'}
-                        value={formData[field]}
-                        placeholder={`Enter ${capitalizeText(field)}`}
-                        onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
-                    />
-                </Form.Group>
-            ))}
-            <Form.Group className="mb-3">
-                <Form.Label>Religion</Form.Label>
-                <Form.Control
-                    as="select"
-                    name="religion"
-                    value={formData.religion}
-                    onChange={handleInputChange}
-                    required
-                >
-                    <option value="">Select Religion</option>
-                    {religionOptions.map((religion, index) => (
-                        <option key={index} value={religion}>
-                            {religion}
-                        </option>
-                    ))}
-                </Form.Control>
-            </Form.Group>
-            <Form.Group className="mb-3">
-                <Form.Label>Cast</Form.Label>
-                <Form.Control
-                    as="select"
-                    name="cast"
-                    value={formData.cast}
-                    onChange={handleInputChange}
-                    required
-                    disabled={!formData.religion}
-                >
-                    <option value="">Select Cast</option>
-                    {castOptions.map((cast, index) => (
-                        <option key={index} value={cast}>
-                            {cast}
-                        </option>
-                    ))}
-                </Form.Control>
-            </Form.Group>
+            <Row>
+                <Col md={6}>
+                    <Form.Group className="mb-3">
+                        <Form.Label>First Name</Form.Label>
+                        <Form.Control
+                            type="text"
+                            value={formData.first_name}
+                            placeholder="Enter First Name"
+                            onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                        />
+                    </Form.Group>
+                </Col>
+                <Col md={6}>
+                    <Form.Group className="mb-3">
+                        <Form.Label>Last Name</Form.Label>
+                        <Form.Control
+                            type="text"
+                            value={formData.last_name}
+                            placeholder="Enter Last Name"
+                            onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                        />
+                    </Form.Group>
+                </Col>
+            </Row>
+            <Row>
+                <Col md={6}>
+                    <Form.Group className="mb-3">
+                        <Form.Label>Username</Form.Label>
+                        <Form.Control
+                            type="text"
+                            value={formData.username}
+                            placeholder="Enter Username"
+                            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                        />
+                    </Form.Group>
+                </Col>
+                <Col md={6}>
+                    <Form.Group className="mb-3">
+                        <Form.Label>Email</Form.Label>
+                        <Form.Control
+                            type="email"
+                            value={formData.email}
+                            placeholder="Enter Email"
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        />
+                    </Form.Group>
+                </Col>
+            </Row>
+            <Row>
+                <Col md={6}>
+                    <Form.Group className="mb-3">
+                        <Form.Label>Religion</Form.Label>
+                        <Form.Control
+                            as="select"
+                            name="religion"
+                            value={formData.religion}
+                            onChange={handleInputChange}
+                            required
+                        >
+                            <option value="">Select Religion</option>
+                            {religionOptions.map((religion, index) => (
+                                <option key={index} value={religion}>
+                                    {religion}
+                                </option>
+                            ))}
+                        </Form.Control>
+                    </Form.Group>
+                </Col>
+                <Col md={6}>
+                    <Form.Group className="mb-3">
+                        <Form.Label>Cast</Form.Label>
+                        <Form.Control
+                            as="select"
+                            name="cast"
+                            value={formData.cast}
+                            onChange={handleInputChange}
+                            required
+                            disabled={!formData.religion}
+                        >
+                            <option value="">Select Cast</option>
+                            {castOptions.map((cast, index) => (
+                                <option key={index} value={cast}>
+                                    {cast}
+                                </option>
+                            ))}
+                        </Form.Control>
+                    </Form.Group>
+                </Col>
+            </Row>
             <Form.Group className="mb-3">
                 <Form.Label>Role</Form.Label>
                 <Form.Control
@@ -284,7 +327,7 @@ export default function AdminCP({ sessionUser }) {
             <Button variant="success" onClick={() => setExtraFields([...extraFields, { label: '', value: '' }])}>+ Add Field</Button>
         </>
     );
-
+    
     if (loading) return <LoadingScreen />;
 
     return (
