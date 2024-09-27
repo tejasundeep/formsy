@@ -2,9 +2,9 @@ import Logout from '@/components/logout';
 import Link from 'next/link';
 import { useEffect, useState, useCallback } from 'react';
 import { Table, Container, Row, Col, Button, Modal, Form, Spinner } from 'react-bootstrap';
+import { religionOptions, religionToCastMap } from '@/components/groups';
 
 export default function AdminCP({ sessionUser }) {
-    // Initial form state
     const initialFormState = {
         first_name: '',
         last_name: '',
@@ -16,14 +16,13 @@ export default function AdminCP({ sessionUser }) {
         cast: ''
     };
 
-    // State variables
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [formData, setFormData] = useState(initialFormState);
     const [selectedUser, setSelectedUser] = useState(null);
     const [extraFields, setExtraFields] = useState([]);
-    const [previousPassword, setPreviousPassword] = useState(''); // New state to hold existing password
+    const [previousPassword, setPreviousPassword] = useState('');
 
     const roles = [
         { label: 'User', value: 'user' },
@@ -32,16 +31,17 @@ export default function AdminCP({ sessionUser }) {
         { label: 'Super Admin', value: 'super-admin' },
     ];
 
-    // Filter users based on role and matching cast and religion from the admin data
+    const castOptions = religionToCastMap[formData.religion] || [];
+
     const filterUsersByRole = useCallback((data, admin) => {
         if (sessionUser?.role === 'super-admin') {
             setUsers(data.filter(user => user.role === 'admin'));
         } else if (sessionUser?.role === 'admin') {
-            setUsers(data.filter(user => 
+            setUsers(data.filter(user =>
                 (user.role === 'moderator' || user.role === 'user') && user.religion === admin.religion && user.cast === admin.cast
             ));
         } else if (sessionUser?.role === 'moderator') {
-            setUsers(data.filter(user => 
+            setUsers(data.filter(user =>
                 user.role === 'user' && user.religion === admin.religion && user.cast === admin.cast
             ));
         } else {
@@ -49,7 +49,6 @@ export default function AdminCP({ sessionUser }) {
         }
     }, [sessionUser?.role]);
 
-    // Fetch users and filter by admin's religion and cast
     const fetchUsers = useCallback(async () => {
         setLoading(true);
         try {
@@ -58,7 +57,7 @@ export default function AdminCP({ sessionUser }) {
             const admin = data.find(user => user.role === 'admin' && user.id === sessionUser?.id);
             const superadmin = data.find(user => user.role === 'super-admin' && user.id === sessionUser?.id);
 
-            if(superadmin) {
+            if (superadmin) {
                 filterUsersByRole(data, admin);
             } else if (admin) {
                 filterUsersByRole(data, admin);
@@ -76,7 +75,19 @@ export default function AdminCP({ sessionUser }) {
         fetchUsers();
     }, [fetchUsers]);
 
-    // Open modal for adding or editing a user
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        if (name === 'religion') {
+            setFormData(prev => ({
+                ...prev,
+                religion: value,
+                cast: ''
+            }));
+        } else {
+            setFormData(prev => ({ ...prev, [name]: value }));
+        }
+    };
+
     const handleAddOrEditUser = (user = null) => {
         setSelectedUser(user);
         if (user) {
@@ -86,15 +97,15 @@ export default function AdminCP({ sessionUser }) {
                 username: user.username,
                 email: user.email,
                 role: user.role,
-                password: '', // Leave password field empty
+                password: '',
                 religion: user.religion || '',
                 cast: user.cast || ''
             });
-            setPreviousPassword(user.password); // Store existing password
+            setPreviousPassword(user.password);
             setExtraFields(extractExtraFields(user));
         } else {
             setFormData(initialFormState);
-            setPreviousPassword(''); // Reset the previous password
+            setPreviousPassword('');
             setExtraFields([]);
         }
         setShowModal(true);
@@ -106,7 +117,6 @@ export default function AdminCP({ sessionUser }) {
             .map(key => ({ label: key, value: user[key] }))
     );
 
-    // Handle user deletion
     const handleDelete = async (id) => {
         try {
             await fetch(`/api/users/${id}`, { method: 'DELETE' });
@@ -116,14 +126,22 @@ export default function AdminCP({ sessionUser }) {
         }
     };
 
-    // Handle user form submission (add or update)
     const handleSubmit = async () => {
-        const finalData = { ...formData }; // Copy form data
+        if (!formData.first_name || !formData.email || !formData.role) {
+            alert("Please fill in all required fields.");
+            return;
+        }
+
+        if (extraFields.some(field => !field.label || !field.value)) {
+            alert("Please fill in both label and value for all extra fields.");
+            return;
+        }
+
+        const finalData = { ...formData };
         extraFields.forEach(field => {
             finalData[field.label.toLowerCase()] = field.value;
         });
 
-        // If the password field is empty and it's an edit operation, set it to the previous password
         if (!finalData.password && selectedUser) {
             finalData.password = previousPassword;
         }
@@ -135,29 +153,29 @@ export default function AdminCP({ sessionUser }) {
             await fetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(finalData), // Send final data with the previous or new password
+                body: JSON.stringify(finalData),
             });
 
-            setShowModal(false);
+            closeModal();
             fetchUsers();
         } catch (error) {
             console.error('Error saving user:', error);
         }
     };
 
-    // Handle changes to dynamic fields
     const handleFieldChange = (index, key, value) => {
         setExtraFields(extraFields.map((field, i) => (i === index ? { ...field, [key]: value } : field)));
     };
 
     const getAvailableRoles = () => {
-        if (sessionUser?.role === 'super-admin') {
+        if (!sessionUser) return [];
+        if (sessionUser.role === 'super-admin') {
             return roles.filter(role => role.value === 'admin' || role.value === 'moderator');
         }
-        if (sessionUser?.role === 'admin') {
+        if (sessionUser.role === 'admin') {
             return roles.filter(role => role.value === 'user' || role.value === 'moderator');
         }
-        if (sessionUser?.role === 'moderator') {
+        if (sessionUser.role === 'moderator') {
             return roles.filter(role => role.value === 'user');
         }
         return [];
@@ -169,7 +187,12 @@ export default function AdminCP({ sessionUser }) {
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
             .join(' ');
 
-    // Render form fields dynamically
+    const closeModal = () => {
+        setFormData(initialFormState);
+        setExtraFields([]);
+        setShowModal(false);
+    };
+
     const renderFormFields = () => (
         <>
             {['first_name', 'last_name', 'username', 'email'].map((field, index) => (
@@ -186,22 +209,37 @@ export default function AdminCP({ sessionUser }) {
             <Form.Group className="mb-3">
                 <Form.Label>Religion</Form.Label>
                 <Form.Control
-                    type="text"
+                    as="select"
+                    name="religion"
                     value={formData.religion}
-                    placeholder="Enter religion"
-                    onChange={(e) => setFormData({ ...formData, religion: e.target.value })}
+                    onChange={handleInputChange}
                     required
-                />
+                >
+                    <option value="">Select Religion</option>
+                    {religionOptions.map((religion, index) => (
+                        <option key={index} value={religion}>
+                            {religion}
+                        </option>
+                    ))}
+                </Form.Control>
             </Form.Group>
             <Form.Group className="mb-3">
                 <Form.Label>Cast</Form.Label>
                 <Form.Control
-                    type="text"
+                    as="select"
+                    name="cast"
                     value={formData.cast}
-                    placeholder="Enter cast"
-                    onChange={(e) => setFormData({ ...formData, cast: e.target.value })}
+                    onChange={handleInputChange}
                     required
-                />
+                    disabled={!formData.religion}
+                >
+                    <option value="">Select Cast</option>
+                    {castOptions.map((cast, index) => (
+                        <option key={index} value={cast}>
+                            {cast}
+                        </option>
+                    ))}
+                </Form.Control>
             </Form.Group>
             <Form.Group className="mb-3">
                 <Form.Label>Role</Form.Label>
@@ -270,7 +308,6 @@ export default function AdminCP({ sessionUser }) {
     );
 }
 
-// Loading screen component
 const LoadingScreen = () => (
     <Container className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
         <Spinner animation="border" role="status">
@@ -279,7 +316,6 @@ const LoadingScreen = () => (
     </Container>
 );
 
-// Header component with the title and logout button
 const Header = () => (
     <Row className="my-4">
         <Col><h1>Users List</h1></Col>
@@ -287,7 +323,6 @@ const Header = () => (
     </Row>
 );
 
-// Users table component that displays users and action buttons
 const UsersTable = ({ users, roles, onEdit, onDelete }) => (
     <Table striped bordered hover responsive>
         <thead className="table-dark">
@@ -319,7 +354,6 @@ const UsersTable = ({ users, roles, onEdit, onDelete }) => (
     </Table>
 );
 
-// Modal component to handle user addition and editing
 const UserModal = ({ showModal, setShowModal, selectedUser, renderFormFields, handleSubmit }) => (
     <Modal show={showModal} onHide={() => setShowModal(false)}>
         <Modal.Header closeButton>
