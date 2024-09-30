@@ -2,7 +2,8 @@ import Logout from '@/components/logout';
 import Link from 'next/link';
 import { useEffect, useState, useCallback } from 'react';
 import { Table, Container, Row, Col, Button, Modal, Form, Spinner } from 'react-bootstrap';
-import { FaPlus, FaEdit, FaTrash, FaEye, FaSpinner } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaEye, FaSpinner } from 'react-icons/fa';
+import { FaPencil } from "react-icons/fa6";
 import { religionOptions, religionToCastMap } from '@/components/groups';
 import styles from "@/styles/Home.module.css";
 
@@ -369,31 +370,31 @@ const UsersTable = ({ users, roles, onEdit, onDelete }) => (
     <Table striped bordered hover responsive>
         <thead className="table-dark">
             <tr>
-                <th className="align-middle px-3">First Name</th>
-                <th className="align-middle px-3">Last Name</th>
-                <th className="align-middle px-3">Username</th>
-                <th className="align-middle px-3">Email</th>
-                <th className="align-middle px-3">Role</th>
-                <th className="align-middle px-3">Actions</th>
+                <th className="align-middle">First Name</th>
+                <th className="align-middle">Last Name</th>
+                <th className="align-middle">Username</th>
+                <th className="align-middle">Email</th>
+                <th className="align-middle">Role</th>
+                <th className="align-middle">Actions</th>
             </tr>
         </thead>
         <tbody>
             {users.map(user => (
                 <tr key={user.id}>
-                    <td className="align-middle px-3">{user.first_name}</td>
-                    <td className="align-middle px-3">{user.last_name}</td>
-                    <td className="align-middle px-3">{user.username}</td>
-                    <td className="align-middle px-3">{user.email}</td>
-                    <td className="align-middle px-3">{roles.find(r => r.value === user.role)?.label || user.role}</td>
-                    <td className={`align-middle px-3 ${styles.actBtns}`}>
-                        <Link href={`/profile/${user.username}`} className='btn btn-secondary mx-1' target='_blank'>
-                            <FaEye className="me-1" /> View
+                    <td className="align-middle">{user.first_name}</td>
+                    <td className="align-middle">{user.last_name}</td>
+                    <td className="align-middle">{user.username}</td>
+                    <td className="align-middle">{user.email}</td>
+                    <td className="align-middle">{roles.find(r => r.value === user.role)?.label || user.role}</td>
+                    <td className={`align-middle ${styles.actBtnsTable}`}>
+                        <Link href={`/profile/${user.username}`} className='btn btn-secondary mx-1' target='_blank' title='View'>
+                            <FaEye className="me-1" />
                         </Link>
-                        <Button variant="primary" className='mx-1' onClick={() => onEdit(user)}>
-                            <FaEdit className="me-1" /> Edit
+                        <Button variant="primary" className='mx-1' onClick={() => onEdit(user)} title='Edit'>
+                            <FaPencil className="me-1" />
                         </Button>
-                        <Button variant="danger" className='mx-1' onClick={() => onDelete(user.id)}>
-                            <FaTrash className="me-1" /> Delete
+                        <Button variant="danger" className='mx-1' onClick={() => onDelete(user.id)} title='Delete'>
+                            <FaTrash className="me-1" />
                         </Button>
                     </td>
                 </tr>

@@ -12,3 +12,15 @@
   line-height: 40px;
   padding: 0 2rem;
 }
+
+.actBtnsTable button {
+  height: 42px;
+  line-height: 40px;
+  padding: 0 2rem;
+}
+
+.actBtnsTable a {
+  height: 42px;
+  line-height: 40px;
+  padding: 0 2rem;
+}

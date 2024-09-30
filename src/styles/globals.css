@@ -24,3 +24,27 @@ a {
 svg {
   margin-top: -4px;
 }
+
+tbody, td, tfoot, th, thead, tr {
+  border: 0;
+}
+
+th:nth-child(1) {
+  border-radius: 10px 0 0 0;
+}
+
+th:last-child {
+  border-radius: 0 10px 0 0;
+}
+
+tr:last-child  td:first-child {
+  border-radius: 0 0 0 10px;
+}
+
+tr:last-child  td:last-child {
+  border-radius: 0 0 10px 0;
+}
+
+th, td {
+  padding: 1rem 2rem !important;
+}
