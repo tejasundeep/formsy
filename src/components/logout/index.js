@@ -1,5 +1,6 @@
 import { signOut, useSession } from 'next-auth/react';
 import { Button } from 'react-bootstrap';
+import { RiLogoutCircleRLine } from "react-icons/ri";
 
 export default function Logout() {
     const { data: session, status } = useSession();
@@ -8,7 +9,7 @@ export default function Logout() {
     if (status === 'authenticated') {
         return (
             <Button onClick={() => signOut({ callbackUrl: '/' })}>
-                Sign out
+                <RiLogoutCircleRLine /> Sign out
             </Button>
         );
     }

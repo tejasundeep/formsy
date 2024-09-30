@@ -1,7 +1,7 @@
 import Logout from '@/components/logout';
 import Link from 'next/link';
 import { useEffect, useState, useCallback } from 'react';
-import { Table, Container, Row, Col, Button, Modal, Form, Spinner } from 'react-bootstrap';
+import { Table, Container, Row, Col, Button, Modal, Form } from 'react-bootstrap';
 import { FaPlus, FaTrash, FaEye, FaSpinner } from 'react-icons/fa';
 import { FaPencil } from "react-icons/fa6";
 import { religionOptions, religionToCastMap } from '@/components/groups';
@@ -303,7 +303,7 @@ export default function AdminCP({ sessionUser }) {
                 />
             </Form.Group>
             {extraFields.map((field, index) => (
-                <div key={index} className="d-flex mb-3">
+                <div key={index} className="d-flex align-items-center mb-3">
                     <Form.Control
                         type="text"
                         placeholder="Label"
