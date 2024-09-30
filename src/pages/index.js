@@ -4,6 +4,7 @@ import { Container, Row, Col, Button } from "react-bootstrap";
 import { useState } from 'react';
 import { useLayoutContext } from '@/contexts/layoutContext';
 import Register from "@/components/welcome/register";
+import MetaHead from "@/components/meta";
 import Image from "next/legacy/image";
 import styles from "@/styles/Home.module.css";
 
@@ -13,6 +14,10 @@ const Home = () => {
 
     return (
         <>
+            <MetaHead
+                title="Formsy"
+                description="Formsy - Find your cast people"
+            />
             {loggedinStatus === 'authenticated' ? (
                 <AdminCP sessionUser={sessionUser} />
             ) : (

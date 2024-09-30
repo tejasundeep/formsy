@@ -1,8 +1,10 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
-import { Card, Spinner, Alert, Image, Button } from 'react-bootstrap';
+import { Card, Spinner, Alert, Button } from 'react-bootstrap';
+import Image from 'next/legacy/image';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import MetaHead from '@/components/meta';
 import styles from '@/styles/UserProfile.module.css';
 
 const UserProfile = () => {
@@ -97,40 +99,54 @@ const UserProfile = () => {
     };
 
     return (
-        <div className={styles.container}>
-            {user ? (
-                <>
-                    <Card id="id-card" className={`${styles.card} shadow-sm`}>
-                        <Card.Body>
-                            {user.image && (
-                                <Image
-                                    src={user.image}
-                                    alt={`${user.name}'s Profile Picture`}
-                                    roundedCircle
-                                    fluid
-                                    className={styles.profileImage}
-                                />
-                            )}
-                            <Card.Title className={styles.cardTitle}>User Profile</Card.Title>
-                            {renderFields()}
-                        </Card.Body>
-                    </Card>
+        <>
+            <MetaHead
+                title="Formsy Profile"
+                description="Formsy - Find your cast people"
+            />
+            <div className={styles.container}>
+                {user ? (
+                    <>
+                        <Card id="id-card" className={`${styles.card} shadow-sm`}>
+                            <Card.Body>
+                                <div className='text-center'>
+                                    {user.image && (
+                                        <Image
+                                            src={user.image}
+                                            alt={`${user.first_name}'s Profile Picture`}
+                                            quality={100}
+                                            width={150}
+                                            height={150}
+                                            priority
+                                            className={`${styles.profileImage} rounded-circle`}
+                                        />
+                                    )}
+                                </div>
+                                <Card.Title className={`${styles.cardTitle} text-center`}>User Profile</Card.Title>
+                                <hr />
+                                <div className={styles.details}>
+                                    {renderFields()}
+                                </div>
+                            </Card.Body>
+                        </Card>
 
-                    {/* Export Button */}
-                    <Button
-                        variant="success"
-                        className={`${styles.exportButton} mt-3 rounded-5`}
-                        onClick={handleExportToPDF}
-                    >
-                        Export ID Card as PDF
-                    </Button>
-                </>
-            ) : (
-                <Alert variant="warning" className="mt-5">
-                    User not found
-                </Alert>
-            )}
-        </div>
+                        {/* Export Button */}
+                        <Button
+                            variant="success"
+                            className={`${styles.exportButton} mt-3 rounded-5`}
+                            onClick={handleExportToPDF}
+                        >
+                            Export ID Card as PDF
+                        </Button>
+                    </>
+                ) : (
+                    <Alert variant="warning" className="mt-5">
+                        User not found
+                    </Alert>
+                )}
+            </div>
+        </>
+
     );
 };
 

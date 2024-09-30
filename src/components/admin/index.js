@@ -6,6 +6,7 @@ import { FaPlus, FaTrash, FaEye, FaSpinner } from 'react-icons/fa';
 import { FaPencil } from "react-icons/fa6";
 import { religionOptions, religionToCastMap } from '@/components/groups';
 import styles from "@/styles/Home.module.css";
+import Image from 'next/image';
 
 export default function AdminCP({ sessionUser }) {
     const initialFormState = {
@@ -16,7 +17,8 @@ export default function AdminCP({ sessionUser }) {
         role: sessionUser?.role === 'super-admin' ? 'admin' : 'user',
         password: '',
         religion: '',
-        cast: ''
+        cast: '',
+        image: null
     };
 
     const [users, setUsers] = useState([]);
@@ -26,13 +28,7 @@ export default function AdminCP({ sessionUser }) {
     const [selectedUser, setSelectedUser] = useState(null);
     const [extraFields, setExtraFields] = useState([]);
     const [previousPassword, setPreviousPassword] = useState('');
-
-    const roles = [
-        { label: 'User', value: 'user' },
-        { label: 'Moderator', value: 'moderator' },
-        { label: 'Administrator', value: 'admin' },
-        { label: 'Super Admin', value: 'super-admin' },
-    ];
+    const [imagePreview, setImagePreview] = useState(null);
 
     const castOptions = religionToCastMap[formData.religion] || [];
 
@@ -102,21 +98,24 @@ export default function AdminCP({ sessionUser }) {
                 role: user.role,
                 password: '',
                 religion: user.religion || '',
-                cast: user.cast || ''
+                cast: user.cast || '',
+                image: null
             });
             setPreviousPassword(user.password);
             setExtraFields(extractExtraFields(user));
+            setImagePreview(user.image ? `${user.image}` : null); // Set existing image preview
         } else {
             setFormData(initialFormState);
             setPreviousPassword('');
             setExtraFields([]);
+            setImagePreview(null); // Clear image preview
         }
         setShowModal(true);
     };
 
     const extractExtraFields = (user) => (
         Object.keys(user)
-            .filter(key => !['first_name', 'last_name', 'username', 'email', 'role', 'password', 'id', 'religion', 'cast', 'created_at'].includes(key))
+            .filter(key => !['first_name', 'last_name', 'username', 'email', 'role', 'password', 'id', 'religion', 'cast', 'created_at', 'image'].includes(key))
             .map(key => ({ label: key, value: user[key] }))
     );
 
@@ -135,18 +134,19 @@ export default function AdminCP({ sessionUser }) {
             return;
         }
 
-        if (extraFields.some(field => !field.label || !field.value)) {
-            alert("Please fill in both label and value for all extra fields.");
-            return;
-        }
+        const formDataToSubmit = new FormData();
+        formDataToSubmit.append('first_name', formData.first_name);
+        formDataToSubmit.append('last_name', formData.last_name);
+        formDataToSubmit.append('username', formData.username);
+        formDataToSubmit.append('email', formData.email);
+        formDataToSubmit.append('role', formData.role);
+        formDataToSubmit.append('religion', formData.religion);
+        formDataToSubmit.append('cast', formData.cast);
+        formDataToSubmit.append('password', formData.password || previousPassword);
 
-        const finalData = { ...formData };
-        extraFields.forEach(field => {
-            finalData[field.label.toLowerCase()] = field.value;
-        });
-
-        if (!finalData.password && selectedUser) {
-            finalData.password = previousPassword;
+        // Append the image if one is selected
+        if (formData.image) {
+            formDataToSubmit.append('image', formData.image);
         }
 
         try {
@@ -155,8 +155,7 @@ export default function AdminCP({ sessionUser }) {
 
             await fetch(url, {
                 method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(finalData),
+                body: formDataToSubmit, // Send FormData with file and text data
             });
 
             closeModal();
@@ -170,24 +169,18 @@ export default function AdminCP({ sessionUser }) {
         setExtraFields(extraFields.map((field, i) => (i === index ? { ...field, [key]: value } : field)));
     };
 
-    const getAvailableRoles = () => {
-        if (!sessionUser) return [];
-        if (sessionUser.role === 'super-admin') {
-            return roles.filter(role => role.value === 'admin' || role.value === 'moderator');
-        }
-        if (sessionUser.role === 'admin') {
-            return roles.filter(role => role.value === 'user' || role.value === 'moderator');
-        }
-        if (sessionUser.role === 'moderator') {
-            return roles.filter(role => role.value === 'user');
-        }
-        return [];
-    };
-
     const closeModal = () => {
         setFormData(initialFormState);
         setExtraFields([]);
         setShowModal(false);
+    };
+
+    const handleImagePreview = (file) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setImagePreview(reader.result); // Set preview URL for image
+        };
+        reader.readAsDataURL(file);
     };
 
     const renderFormFields = () => (
@@ -281,18 +274,6 @@ export default function AdminCP({ sessionUser }) {
                     </Form.Group>
                 </Col>
             </Row>
-            <Form.Group className="mb-3 ">
-                <Form.Label>Role</Form.Label>
-                <Form.Control
-                    as="select"
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                >
-                    {getAvailableRoles().map((role, index) => (
-                        <option key={index} value={role.value}>{role.label}</option>
-                    ))}
-                </Form.Control>
-            </Form.Group>
             <Form.Group className="mb-3">
                 <Form.Label>Password {selectedUser && "(leave blank to keep existing)"}</Form.Label>
                 <Form.Control
@@ -302,6 +283,28 @@ export default function AdminCP({ sessionUser }) {
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 />
             </Form.Group>
+
+            {/* Image Upload Field */}
+            <Form.Group className="mb-3">
+                <Form.Label>Profile Image</Form.Label>
+                <Form.Control
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                            setFormData({ ...formData, image: file });
+                            handleImagePreview(file); // Update image preview
+                        }
+                    }}
+                />
+                {imagePreview && (
+                    <div className="mt-2">
+                        <Image src={imagePreview} alt="Profile Preview" layout='responsive' width={100} height={100} />
+                    </div>
+                )}
+            </Form.Group>
+
             {extraFields.map((field, index) => (
                 <div key={index} className="d-flex align-items-center mb-3">
                     <Form.Control
@@ -337,7 +340,7 @@ export default function AdminCP({ sessionUser }) {
                     <Button className="mb-3" onClick={() => handleAddOrEditUser()}>
                         <FaPlus className="me-2" /> Add User
                     </Button>
-                    <UsersTable users={users} roles={roles} onEdit={handleAddOrEditUser} onDelete={handleDelete} />
+                    <UsersTable users={users} onEdit={handleAddOrEditUser} onDelete={handleDelete} />
                 </Col>
             </Row>
 
@@ -366,26 +369,38 @@ const Header = () => (
     </Row>
 );
 
-const UsersTable = ({ users, roles, onEdit, onDelete }) => (
+const UsersTable = ({ users, onEdit, onDelete }) => (
     <Table striped bordered hover responsive>
         <thead className="table-dark">
             <tr>
+                <th className="align-middle">Image</th>
                 <th className="align-middle">First Name</th>
                 <th className="align-middle">Last Name</th>
                 <th className="align-middle">Username</th>
                 <th className="align-middle">Email</th>
-                <th className="align-middle">Role</th>
                 <th className="align-middle">Actions</th>
             </tr>
         </thead>
         <tbody>
             {users.map(user => (
                 <tr key={user.id}>
+                    <td className="align-middle">
+                        {user.image ? (
+                            <Image
+                                src={user.image} 
+                                alt={`${user.first_name}'s profile picture`}
+                                width={50} 
+                                height={50} 
+                                style={{ borderRadius: '50%' }}
+                            />
+                        ) : (
+                            <span>No Image</span>
+                        )}
+                    </td>
                     <td className="align-middle">{user.first_name}</td>
                     <td className="align-middle">{user.last_name}</td>
                     <td className="align-middle">{user.username}</td>
                     <td className="align-middle">{user.email}</td>
-                    <td className="align-middle">{roles.find(r => r.value === user.role)?.label || user.role}</td>
                     <td className={`align-middle ${styles.actBtnsTable}`}>
                         <Link href={`/profile/${user.username}`} className='btn btn-secondary mx-1' target='_blank' title='View'>
                             <FaEye className="me-1" />

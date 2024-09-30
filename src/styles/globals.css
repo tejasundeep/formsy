@@ -9,7 +9,7 @@ a {
   text-decoration: none;
 }
 
-.form-control {
+.form-control:not(.form-control[type=file]) {
   height: 52px;
   padding: 0 1rem;
 }
