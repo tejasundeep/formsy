@@ -2,7 +2,9 @@ import Logout from '@/components/logout';
 import Link from 'next/link';
 import { useEffect, useState, useCallback } from 'react';
 import { Table, Container, Row, Col, Button, Modal, Form, Spinner } from 'react-bootstrap';
+import { FaPlus, FaEdit, FaTrash, FaEye, FaSpinner } from 'react-icons/fa';
 import { religionOptions, religionToCastMap } from '@/components/groups';
+import styles from "@/styles/Home.module.css";
 
 export default function AdminCP({ sessionUser }) {
     const initialFormState = {
@@ -181,12 +183,6 @@ export default function AdminCP({ sessionUser }) {
         return [];
     };
 
-    const capitalizeText = (text) =>
-        text.replace(/_/g, ' ')
-            .split(' ')
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(' ');
-
     const closeModal = () => {
         setFormData(initialFormState);
         setExtraFields([]);
@@ -284,7 +280,7 @@ export default function AdminCP({ sessionUser }) {
                     </Form.Group>
                 </Col>
             </Row>
-            <Form.Group className="mb-3">
+            <Form.Group className="mb-3 ">
                 <Form.Label>Role</Form.Label>
                 <Form.Control
                     as="select"
@@ -321,21 +317,25 @@ export default function AdminCP({ sessionUser }) {
                         value={field.value}
                         onChange={(e) => handleFieldChange(index, 'value', e.target.value)}
                     />
-                    <Button variant="danger" onClick={() => setExtraFields(extraFields.filter((_, i) => i !== index))}>-</Button>
+                    <Button variant="danger" onClick={() => setExtraFields(extraFields.filter((_, i) => i !== index))}><FaTrash /></Button>
                 </div>
             ))}
-            <Button variant="success" onClick={() => setExtraFields([...extraFields, { label: '', value: '' }])}>+ Add Field</Button>
+            <Button variant="success" onClick={() => setExtraFields([...extraFields, { label: '', value: '' }])}>
+                <FaPlus className="me-2" /> Add Field
+            </Button>
         </>
     );
-    
+
     if (loading) return <LoadingScreen />;
 
     return (
         <Container>
             <Header />
             <Row>
-                <Col>
-                    <Button className="mb-3" onClick={() => handleAddOrEditUser()}>Add User</Button>
+                <Col className={styles.actBtns}>
+                    <Button className="mb-3" onClick={() => handleAddOrEditUser()}>
+                        <FaPlus className="me-2" /> Add User
+                    </Button>
                     <UsersTable users={users} roles={roles} onEdit={handleAddOrEditUser} onDelete={handleDelete} />
                 </Col>
             </Row>
@@ -353,14 +353,13 @@ export default function AdminCP({ sessionUser }) {
 
 const LoadingScreen = () => (
     <Container className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
-        <Spinner animation="border" role="status">
-            <span className="visually-hidden">Loading...</span>
-        </Spinner>
+        <FaSpinner className="spinner-grow" role="status" />
+        <span className="visually-hidden">Loading...</span>
     </Container>
 );
 
 const Header = () => (
-    <Row className="my-4">
+    <Row className={`${styles.actBtns} my-4`}>
         <Col><h1>Users List</h1></Col>
         <Col className="text-end"><Logout /></Col>
     </Row>
@@ -370,26 +369,32 @@ const UsersTable = ({ users, roles, onEdit, onDelete }) => (
     <Table striped bordered hover responsive>
         <thead className="table-dark">
             <tr>
-                <th>First Name</th>
-                <th>Last Name</th>
-                <th>Username</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Actions</th>
+                <th className="align-middle px-3">First Name</th>
+                <th className="align-middle px-3">Last Name</th>
+                <th className="align-middle px-3">Username</th>
+                <th className="align-middle px-3">Email</th>
+                <th className="align-middle px-3">Role</th>
+                <th className="align-middle px-3">Actions</th>
             </tr>
         </thead>
         <tbody>
             {users.map(user => (
                 <tr key={user.id}>
-                    <td>{user.first_name}</td>
-                    <td>{user.last_name}</td>
-                    <td>{user.username}</td>
-                    <td>{user.email}</td>
-                    <td>{roles.find(r => r.value === user.role)?.label || user.role}</td>
-                    <td>
-                        <Link href={`/profile/${user.username}`} className='btn btn-secondary mx-1'>View</Link>
-                        <Button variant="primary" className='mx-1' onClick={() => onEdit(user)}>Edit</Button>
-                        <Button variant="danger" className='mx-1' onClick={() => onDelete(user.id)}>Delete</Button>
+                    <td className="align-middle px-3">{user.first_name}</td>
+                    <td className="align-middle px-3">{user.last_name}</td>
+                    <td className="align-middle px-3">{user.username}</td>
+                    <td className="align-middle px-3">{user.email}</td>
+                    <td className="align-middle px-3">{roles.find(r => r.value === user.role)?.label || user.role}</td>
+                    <td className={`align-middle px-3 ${styles.actBtns}`}>
+                        <Link href={`/profile/${user.username}`} className='btn btn-secondary mx-1' target='_blank'>
+                            <FaEye className="me-1" /> View
+                        </Link>
+                        <Button variant="primary" className='mx-1' onClick={() => onEdit(user)}>
+                            <FaEdit className="me-1" /> Edit
+                        </Button>
+                        <Button variant="danger" className='mx-1' onClick={() => onDelete(user.id)}>
+                            <FaTrash className="me-1" /> Delete
+                        </Button>
                     </td>
                 </tr>
             ))}
@@ -398,8 +403,8 @@ const UsersTable = ({ users, roles, onEdit, onDelete }) => (
 );
 
 const UserModal = ({ showModal, setShowModal, selectedUser, renderFormFields, handleSubmit }) => (
-    <Modal show={showModal} onHide={() => setShowModal(false)}>
-        <Modal.Header closeButton>
+    <Modal show={showModal} onHide={() => setShowModal(false)} className={styles.actBtns}>
+        <Modal.Header className='border-0'>
             <Modal.Title>{selectedUser ? 'Edit User' : 'Add User'}</Modal.Title>
         </Modal.Header>
         <Modal.Body><Form>{renderFormFields()}</Form></Modal.Body>

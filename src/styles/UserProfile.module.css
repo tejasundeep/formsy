@@ -1,0 +1,63 @@
+/* styles/UserProfile.module.css */
+
+.container {
+    padding: 40px 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f7f9fc;
+    flex-direction: column;
+}
+
+.card {
+    max-width: 400px;
+    padding: 20px;
+    background-color: #ffffff;
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
+}
+
+.profileImage {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    margin-bottom: 20px;
+    border: 4px solid #007bff;
+    transition: border-color 0.3s ease, transform 0.3s ease;
+}
+
+.card:hover .profileImage {
+    border-color: #0056b3;
+    transform: scale(1.05);
+}
+
+.cardTitle {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.field {
+    margin-bottom: 15px;
+    font-size: 16px;
+    color: #555;
+}
+
+.field strong {
+    color: #007bff;
+    margin-right: 3px;
+}
+
+.field:hover strong {
+    color: #0056b3;
+    transition: color 0.3s ease;
+}

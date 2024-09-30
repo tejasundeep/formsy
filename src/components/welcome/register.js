@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import { religionOptions, religionToCastMap } from '@/components/groups';
 import Script from 'next/script'; // Import Razorpay script
 
-export default function RegisterPage() {
+export default function Register() {
     const router = useRouter();
 
     const initialFormState = {
@@ -268,7 +268,7 @@ export default function RegisterPage() {
                             </Col>
                         </Row>
 
-                        <Button variant="primary" type="submit" disabled={loading}>
+                        <Button variant="primary" className='w-100' type="submit" disabled={loading}>
                             {loading ? <Spinner animation="border" size="sm" /> : 'Register'}
                         </Button>
                     </Form>

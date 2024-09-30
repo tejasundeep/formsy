@@ -67,7 +67,7 @@ function Login() {
                         </Col>
                     </Row>
 
-                    <Button variant="primary" type="submit">
+                    <Button className="mt-2 w-100" variant="primary" type="submit">
                         Log in
                     </Button>
                 </Form>
